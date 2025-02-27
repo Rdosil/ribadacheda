@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Wine } from 'lucide-react';
+import { Wine, ShieldCheck } from 'lucide-react';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -63,6 +63,14 @@ const Footer = () => {
                   </a>
                 </li>
               ))}
+              <li>
+                <a 
+                  href="/consultar-reserva"
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  Consultar Reserva
+                </a>
+              </li>
             </ul>
           </div>
           
@@ -118,10 +126,13 @@ const Footer = () => {
           <p className="text-gray-400 text-sm">
             &copy; {currentYear} Restaurante Vinoteca Riba da Cheda. Todos los derechos reservados.
           </p>
-          <div className="mt-4 md:mt-0 text-sm text-gray-400 flex space-x-6">
-            <a href="#" className="hover:text-white transition-colors">Política de privacidad</a>
-            <a href="#" className="hover:text-white transition-colors">Términos y condiciones</a>
-            <a href="#" className="hover:text-white transition-colors">Cookies</a>
+          <div className="mt-4 md:mt-0 flex space-x-6">
+            <a href="#" className="text-gray-400 hover:text-white transition-colors text-sm">Política de privacidad</a>
+            <a href="#" className="text-gray-400 hover:text-white transition-colors text-sm">Términos y condiciones</a>
+            <a href="/admin-reservas" className="text-gray-400 hover:text-white transition-colors text-sm flex items-center">
+              <ShieldCheck className="h-4 w-4 mr-1" />
+              Administración
+            </a>
           </div>
         </div>
       </div>

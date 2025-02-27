@@ -12,6 +12,7 @@ export interface WineCardProps {
   image?: string;
   badge?: string;
   className?: string;
+  style?: React.CSSProperties;
 }
 
 const WineCard = ({
@@ -24,12 +25,16 @@ const WineCard = ({
   image,
   badge,
   className,
+  style,
 }: WineCardProps) => {
   return (
-    <div className={cn(
-      "wine-card bg-white rounded-lg overflow-hidden shadow-elegant",
-      className
-    )}>
+    <div 
+      className={cn(
+        "wine-card bg-white rounded-lg overflow-hidden shadow-elegant",
+        className
+      )}
+      style={style}
+    >
       {image && (
         <div className="relative h-48 overflow-hidden">
           <img

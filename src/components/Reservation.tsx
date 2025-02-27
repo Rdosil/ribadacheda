@@ -5,56 +5,13 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { CalendarIcon, Clock, Check, XCircle, Clock3 } from 'lucide-react';
+import { CalendarIcon, Clock, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 
 const timeSlots = [
   '13:00', '13:30', '14:00', '14:30', '15:00', 
   '20:00', '20:30', '21:00', '21:30', '22:00'
 ];
-
-// Enumeración para los estados de la reserva
-export enum ReservationStatus {
-  PENDING = 'pending',
-  APPROVED = 'approved',
-  REJECTED = 'rejected'
-}
-
-// Interfaz para las reservas
-export interface Reservation {
-  id: string;
-  date: Date;
-  time: string;
-  guests: number;
-  name: string;
-  email: string;
-  phone: string;
-  notes?: string;
-  status: ReservationStatus;
-  rejectionReason?: string;
-  createdAt: Date;
-}
-
-// Simulamos almacenamiento local (en una aplicación real esto estaría en una base de datos)
-const saveReservation = (reservation: Omit<Reservation, 'id' | 'status' | 'createdAt'>) => {
-  const id = `res_${Date.now()}`;
-  const newReservation: Reservation = {
-    ...reservation,
-    id,
-    status: ReservationStatus.PENDING,
-    createdAt: new Date()
-  };
-  
-  // Guardamos en localStorage
-  const reservations = JSON.parse(localStorage.getItem('reservations') || '[]');
-  reservations.push(newReservation);
-  localStorage.setItem('reservations', JSON.stringify(reservations));
-  
-  // Simulamos el envío de notificación al restaurante (en una implementación real, esto sería una llamada API)
-  console.log(`Notificación enviada al restaurante (${process.env.RESTAURANT_EMAIL || 'ribadacheda@gmail.com'}):`, newReservation);
-  
-  return newReservation;
-};
 
 const ReservationComponent = () => {
   const [date, setDate] = useState<Date | undefined>(undefined);
@@ -65,8 +22,8 @@ const ReservationComponent = () => {
   const [phone, setPhone] = useState('');
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showStatusLink, setShowStatusLink] = useState(false);
-  const [reservationId, setReservationId] = useState<string | null>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const restaurantEmail = 'ribadacheda@gmail.com';
   
   const sectionRef = useRef<HTMLDivElement>(null);
 
@@ -100,44 +57,74 @@ const ReservationComponent = () => {
     
     setIsSubmitting(true);
     
-    // Creamos el objeto de reserva
-    const reservationData = {
-      date,
-      time,
-      guests,
-      name,
-      email,
-      phone,
-      notes: notes || undefined
-    };
+    // Formato de la fecha
+    const formattedDate = format(date, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: es });
     
-    // Simulamos el proceso de guardar la reserva
+    // Construimos el asunto del correo
+    const subject = `Nueva reserva: ${name} - ${formattedDate} ${time} - ${guests} personas`;
+    
+    // Construimos el cuerpo del correo
+    const body = `
+Detalles de la reserva:
+
+Nombre: ${name}
+Fecha: ${formattedDate}
+Hora: ${time}
+Número de personas: ${guests}
+Teléfono: ${phone}
+Email: ${email}
+${notes ? `Observaciones: ${notes}` : ''}
+
+Por favor, responda a este correo para:
+- Confirmar la reserva
+- Proponer un horario alternativo
+- Informar si no es posible atender la reserva
+
+Gracias,
+Sistema de Reservas - Restaurante Vinoteca Riba da Cheda
+    `.trim();
+    
+    // Construimos el enlace mailto
+    const mailtoLink = `mailto:${restaurantEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    
+    // Simulamos el envío (en una implementación real, esto sería una llamada API)
     setTimeout(() => {
-      try {
-        const savedReservation = saveReservation(reservationData);
-        setReservationId(savedReservation.id);
-        setIsSubmitting(false);
-        setShowStatusLink(true);
-        
-        toast.success('Solicitud de reserva enviada', {
-          description: 'El restaurante revisará tu solicitud y te notificará por correo electrónico.',
-        });
-        
-        // Limpiamos el formulario
-        setDate(undefined);
-        setTime(undefined);
-        setGuests(2);
-        setName('');
-        setEmail('');
-        setPhone('');
-        setNotes('');
-      } catch (error) {
-        setIsSubmitting(false);
-        toast.error('Error al enviar la solicitud de reserva', {
-          description: 'Por favor intente nuevamente más tarde.',
-        });
-      }
-    }, 1500);
+      // Abrimos el cliente de correo del usuario
+      window.location.href = mailtoLink;
+      
+      setIsSubmitting(false);
+      setShowSuccess(true);
+      
+      // Guardamos la reserva en localStorage solo para referencia
+      const reservationData = {
+        id: `res_${Date.now()}`,
+        date,
+        time,
+        guests,
+        name,
+        email,
+        phone,
+        notes: notes || undefined,
+        createdAt: new Date()
+      };
+      
+      const reservations = JSON.parse(localStorage.getItem('reservations') || '[]');
+      reservations.push(reservationData);
+      localStorage.setItem('reservations', JSON.stringify(reservations));
+      
+      // Limpiamos el formulario
+      setDate(undefined);
+      setTime(undefined);
+      setGuests(2);
+      setName('');
+      setEmail('');
+      setPhone('');
+      setNotes('');
+    }, 1000);
+  };
+
+  const resetForm = () => {
+    setShowSuccess(false);
   };
 
   return (
@@ -156,7 +143,7 @@ const ReservationComponent = () => {
           </p>
         </div>
 
-        {!showStatusLink ? (
+        {!showSuccess ? (
           <div className="bg-white rounded-xl shadow-elegant p-8 animate-on-scroll">
             <form onSubmit={handleSubmit}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -339,86 +326,41 @@ const ReservationComponent = () => {
           <div className="bg-white rounded-xl shadow-elegant p-8 animate-on-scroll">
             <div className="text-center">
               <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
-                <Clock3 className="h-6 w-6 text-green-600" />
+                <Mail className="h-6 w-6 text-green-600" />
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">¡Solicitud de reserva enviada!</h3>
               <p className="text-gray-600 mb-6">
-                Tu solicitud de reserva ha sido recibida y será revisada por el restaurante. 
-                Recibirás un correo electrónico con la confirmación o rechazo de tu reserva.
+                Tu solicitud de reserva ha sido enviada al restaurante. Se ha abierto tu cliente de correo para enviar los detalles. 
+                Recibirás una respuesta por correo electrónico con la confirmación de tu reserva.
               </p>
               <Button 
-                className="bg-wine-600 hover:bg-wine-700 text-white" 
-                onClick={() => {
-                  // Aquí podríamos redirigir a una página específica para ver el estado
-                  const reservationStatusUrl = `#consultar-reserva?id=${reservationId}`;
-                  window.location.href = reservationStatusUrl;
-                }}
+                variant="outline" 
+                onClick={resetForm}
+                className="bg-wine-600 hover:bg-wine-700 text-white"
               >
-                Consultar estado de reserva
+                Realizar otra reserva
               </Button>
-              <div className="mt-4">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowStatusLink(false)}
-                >
-                  Realizar otra reserva
-                </Button>
-              </div>
             </div>
           </div>
         )}
 
-        {/* Sección de estado de reservas */}
+        {/* Instrucciones de reserva */}
         <div className="mt-12 max-w-3xl mx-auto">
           <div className="bg-white/80 backdrop-blur-sm rounded-xl p-8 shadow-sm">
-            <h3 className="text-xl font-semibold text-gray-900 mb-4 text-center">¿Ya has realizado una reserva?</h3>
-            <p className="text-gray-600 text-center mb-6">
-              Consulta el estado de tu reserva introduciendo tu correo electrónico
-            </p>
-            <div className="flex flex-col sm:flex-row items-center gap-4">
-              <input
-                type="email"
-                placeholder="Correo electrónico"
-                className="form-input flex-1"
-              />
-              <Button 
-                className="whitespace-nowrap bg-wine-600 hover:bg-wine-700 text-white"
-                onClick={() => {
-                  window.location.href = "#consultar-reserva";
-                }}
-              >
-                Consultar Reservas
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* Leyenda de estados */}
-        <div className="mt-12 max-w-3xl mx-auto">
-          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-sm">
-            <h4 className="text-lg font-medium text-gray-900 mb-4 text-center">Estado de las reservas</h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex items-center p-3 bg-yellow-50 rounded-lg">
-                <Clock3 className="h-5 w-5 text-yellow-500 mr-3" />
-                <div>
-                  <p className="text-sm font-medium text-gray-900">Pendiente</p>
-                  <p className="text-xs text-gray-500">En espera de confirmación</p>
-                </div>
-              </div>
-              <div className="flex items-center p-3 bg-green-50 rounded-lg">
-                <Check className="h-5 w-5 text-green-500 mr-3" />
-                <div>
-                  <p className="text-sm font-medium text-gray-900">Aprobada</p>
-                  <p className="text-xs text-gray-500">Reserva confirmada</p>
-                </div>
-              </div>
-              <div className="flex items-center p-3 bg-red-50 rounded-lg">
-                <XCircle className="h-5 w-5 text-red-500 mr-3" />
-                <div>
-                  <p className="text-sm font-medium text-gray-900">Rechazada</p>
-                  <p className="text-xs text-gray-500">No disponible</p>
-                </div>
-              </div>
+            <h4 className="text-xl font-semibold text-gray-900 mb-4 text-center">Proceso de reserva</h4>
+            <div className="space-y-4">
+              <p className="text-gray-600">
+                Para solicitar una reserva, simplemente completa el formulario anterior con tus datos y preferencias. 
+                Nosotros te responderemos por correo electrónico tan pronto como sea posible para confirmar tu reserva.
+              </p>
+              <p className="text-gray-600">
+                Si necesitas modificar o cancelar tu reserva, por favor responde al correo de confirmación o 
+                contacta con nosotros directamente por teléfono al 636488337.
+              </p>
+              <p className="text-gray-600">
+                Para cualquier consulta especial o reservas de grupos grandes (más de 10 personas), te recomendamos contactar 
+                directamente por teléfono.
+              </p>
             </div>
           </div>
         </div>

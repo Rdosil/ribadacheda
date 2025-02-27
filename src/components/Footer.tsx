@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Wine, ShieldCheck } from 'lucide-react';
+import { Wine } from 'lucide-react';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -63,14 +63,6 @@ const Footer = () => {
                   </a>
                 </li>
               ))}
-              <li>
-                <a 
-                  href="/consultar-reserva"
-                  className="text-gray-400 hover:text-white transition-colors"
-                >
-                  Consultar Reserva
-                </a>
-              </li>
             </ul>
           </div>
           
@@ -129,10 +121,6 @@ const Footer = () => {
           <div className="mt-4 md:mt-0 flex space-x-6">
             <a href="#" className="text-gray-400 hover:text-white transition-colors text-sm">Política de privacidad</a>
             <a href="#" className="text-gray-400 hover:text-white transition-colors text-sm">Términos y condiciones</a>
-            <a href="/admin-reservas" className="text-gray-400 hover:text-white transition-colors text-sm flex items-center">
-              <ShieldCheck className="h-4 w-4 mr-1" />
-              Administración
-            </a>
           </div>
         </div>
       </div>

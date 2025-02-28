@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -47,7 +46,7 @@ const ReservationComponent = () => {
     };
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!date || !time || !name || !email || !phone) {
@@ -57,44 +56,30 @@ const ReservationComponent = () => {
     
     setIsSubmitting(true);
     
-    // Formato de la fecha
-    const formattedDate = format(date, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: es });
-    
-    // Construimos el asunto del correo
-    const subject = `Nueva reserva: ${name} - ${formattedDate} ${time} - ${guests} personas`;
-    
-    // Construimos el cuerpo del correo
-    const body = `
-Detalles de la reserva:
-
-Nombre: ${name}
-Fecha: ${formattedDate}
-Hora: ${time}
-Número de personas: ${guests}
-Teléfono: ${phone}
-Email: ${email}
-${notes ? `Observaciones: ${notes}` : ''}
-
-Por favor, responda a este correo para:
-- Confirmar la reserva
-- Proponer un horario alternativo
-- Informar si no es posible atender la reserva
-
-Gracias,
-Sistema de Reservas - Restaurante Vinoteca Riba da Cheda
-    `.trim();
-    
-    // Construimos el enlace mailto
-    const mailtoLink = `mailto:${restaurantEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    
-    // Simulamos el envío (en una implementación real, esto sería una llamada API)
-    setTimeout(() => {
-      // Abrimos el cliente de correo del usuario
-      window.location.href = mailtoLink;
+    try {
+      // Formato de la fecha
+      const formattedDate = format(date, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: es });
       
-      setIsSubmitting(false);
-      setShowSuccess(true);
-      
+      const response = await fetch('/api/send-reservation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name,
+          email,
+          date: formattedDate,
+          time,
+          guests,
+          phone,
+          notes
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al enviar la reserva');
+      }
+
       // Guardamos la reserva en localStorage solo para referencia
       const reservationData = {
         id: `res_${Date.now()}`,
@@ -112,6 +97,9 @@ Sistema de Reservas - Restaurante Vinoteca Riba da Cheda
       reservations.push(reservationData);
       localStorage.setItem('reservations', JSON.stringify(reservations));
       
+      setIsSubmitting(false);
+      setShowSuccess(true);
+      
       // Limpiamos el formulario
       setDate(undefined);
       setTime(undefined);
@@ -120,7 +108,13 @@ Sistema de Reservas - Restaurante Vinoteca Riba da Cheda
       setEmail('');
       setPhone('');
       setNotes('');
-    }, 1000);
+
+      toast.success('Solicitud de reserva enviada correctamente');
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('Error al enviar la reserva. Por favor, inténtelo de nuevo.');
+      setIsSubmitting(false);
+    }
   };
 
   const resetForm = () => {

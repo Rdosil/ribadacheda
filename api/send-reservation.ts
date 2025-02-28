@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import nodemailer from 'nodemailer';
+import { createTransport } from 'nodemailer';
 
 // Configuración del transportador de correo
-const transporter = nodemailer.createTransport({
+const transporter = createTransport({
   host: process.env.SMTP_HOST,
   port: parseInt(process.env.SMTP_PORT || '587'),
   secure: process.env.SMTP_SECURE === 'true',
@@ -22,10 +22,7 @@ type ReservationData = {
   notes?: string;
 };
 
-export default async function handler(
-  req: VercelRequest,
-  res: VercelResponse
-) {
+const handler = async (req: VercelRequest, res: VercelResponse) => {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
@@ -83,4 +80,6 @@ export default async function handler(
     console.error('Error al enviar el email:', error);
     res.status(500).json({ message: 'Error al procesar la reserva' });
   }
-} 
+};
+
+export default handler; 

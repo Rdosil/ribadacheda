@@ -1,7 +1,8 @@
-import { VercelRequest, VercelResponse } from '@vercel/node';
-import nodemailer from 'nodemailer';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { createTransport } from 'nodemailer';
 
-const transporter = nodemailer.createTransport({
+// Configuración del transportador de correo
+const transporter = createTransport({
   host: process.env.SMTP_HOST,
   port: parseInt(process.env.SMTP_PORT || '587'),
   secure: process.env.SMTP_SECURE === 'true',
@@ -11,16 +12,23 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-export default async function handler(
-  req: VercelRequest,
-  res: VercelResponse
-) {
+type ReservationData = {
+  name: string;
+  email: string;
+  date: string;
+  time: string;
+  guests: number;
+  phone: string;
+  notes?: string;
+};
+
+const handler = async (req: VercelRequest, res: VercelResponse) => {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
 
   try {
-    const { name, email, date, time, guests, phone, notes } = req.body;
+    const { name, email, date, time, guests, phone, notes }: ReservationData = req.body;
 
     // Email al restaurante
     await transporter.sendMail({
@@ -72,4 +80,6 @@ export default async function handler(
     console.error('Error al enviar el email:', error);
     res.status(500).json({ message: 'Error al procesar la reserva' });
   }
-} 
+};
+
+export default handler; 

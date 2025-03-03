@@ -3,7 +3,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import sgMail from '@sendgrid/mail';
 
 // Configure SendGrid with API key
-sgMail.setApiKey(process.env.SENDGRID_API_KEY || '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');
+sgMail.setApiKey('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');
 
 type ReservationData = {
   name: string;

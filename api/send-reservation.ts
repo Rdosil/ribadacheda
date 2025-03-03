@@ -1,16 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createTransport } from 'nodemailer';
+import { Resend } from 'resend';
 
-// Configuración del transportador de correo
-const transporter = createTransport({
-  host: process.env.SMTP_HOST,
-  port: parseInt(process.env.SMTP_PORT || '587'),
-  secure: process.env.SMTP_SECURE === 'true',
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 type ReservationData = {
   name: string;
@@ -31,8 +22,8 @@ const handler = async (req: VercelRequest, res: VercelResponse) => {
     const { name, email, date, time, guests, phone, notes }: ReservationData = req.body;
 
     // Email al restaurante
-    await transporter.sendMail({
-      from: process.env.SMTP_FROM,
+    await resend.emails.send({
+      from: 'Riba da Cheda <reservas@ribadacheda.com>',
       to: 'ribadacheda@gmail.com',
       subject: `Nueva reserva: ${name} - ${guests} personas - ${date} ${time}`,
       html: `
@@ -50,12 +41,12 @@ const handler = async (req: VercelRequest, res: VercelResponse) => {
           |
           <a href="mailto:${email}?subject=Cancelación reserva ${date} ${time}&body=Estimado/a ${name},%0D%0A%0D%0ALamentamos informarle que no podemos atender su reserva para el día ${date} a las ${time}.%0D%0A%0D%0AEsperamos poder atenderle en otra ocasión.%0D%0A%0D%0ASaludos cordiales.">Cancelar Reserva</a>
         </p>
-      `,
+      `
     });
 
     // Email automático al cliente
-    await transporter.sendMail({
-      from: process.env.SMTP_FROM,
+    await resend.emails.send({
+      from: 'Riba da Cheda <reservas@ribadacheda.com>',
       to: email,
       subject: 'Solicitud de reserva recibida - Riba da Cheda',
       html: `
@@ -72,7 +63,7 @@ const handler = async (req: VercelRequest, res: VercelResponse) => {
         <br>
         <p>Saludos cordiales,</p>
         <p>Restaurante Vinoteca Riba da Cheda</p>
-      `,
+      `
     });
 
     res.status(200).json({ message: 'Reserva enviada correctamente' });

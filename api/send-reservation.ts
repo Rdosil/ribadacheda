@@ -1,16 +1,9 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createTransport } from 'nodemailer';
 
-// Configuración del transportador de correo
-const transporter = createTransport({
-  host: process.env.SMTP_HOST,
-  port: parseInt(process.env.SMTP_PORT || '587'),
-  secure: process.env.SMTP_SECURE === 'true',
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+import sgMail from '@sendgrid/mail';
+
+// Configure SendGrid with API key
+sgMail.setApiKey(process.env.SENDGRID_API_KEY || '');
 
 type ReservationData = {
   name: string;
@@ -30,10 +23,10 @@ const handler = async (req: VercelRequest, res: VercelResponse) => {
   try {
     const { name, email, date, time, guests, phone, notes }: ReservationData = req.body;
 
-    // Email al restaurante
-    await transporter.sendMail({
-      from: process.env.SMTP_FROM,
+    // Email to the restaurant
+    const emailToRestaurant = {
       to: 'ribadacheda@gmail.com',
+      from: process.env.SENDGRID_FROM_EMAIL || 'noreply@ribadacheda.com',
       subject: `Nueva reserva: ${name} - ${guests} personas - ${date} ${time}`,
       html: `
         <h2>Nueva Solicitud de Reserva</h2>
@@ -51,12 +44,12 @@ const handler = async (req: VercelRequest, res: VercelResponse) => {
           <a href="mailto:${email}?subject=Cancelación reserva ${date} ${time}&body=Estimado/a ${name},%0D%0A%0D%0ALamentamos informarle que no podemos atender su reserva para el día ${date} a las ${time}.%0D%0A%0D%0AEsperamos poder atenderle en otra ocasión.%0D%0A%0D%0ASaludos cordiales.">Cancelar Reserva</a>
         </p>
       `,
-    });
+    };
 
-    // Email automático al cliente
-    await transporter.sendMail({
-      from: process.env.SMTP_FROM,
+    // Email to the client
+    const emailToClient = {
       to: email,
+      from: process.env.SENDGRID_FROM_EMAIL || 'noreply@ribadacheda.com',
       subject: 'Solicitud de reserva recibida - Riba da Cheda',
       html: `
         <h2>Gracias por su solicitud de reserva</h2>
@@ -73,7 +66,13 @@ const handler = async (req: VercelRequest, res: VercelResponse) => {
         <p>Saludos cordiales,</p>
         <p>Restaurante Vinoteca Riba da Cheda</p>
       `,
-    });
+    };
+
+    // Send emails using SendGrid
+    await Promise.all([
+      sgMail.send(emailToRestaurant),
+      sgMail.send(emailToClient)
+    ]);
 
     res.status(200).json({ message: 'Reserva enviada correctamente' });
   } catch (error) {
@@ -82,4 +81,4 @@ const handler = async (req: VercelRequest, res: VercelResponse) => {
   }
 };
 
-export default handler; 
+export default handler;

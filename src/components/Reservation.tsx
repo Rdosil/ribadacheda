@@ -60,6 +60,14 @@ type ReservationFormValues = z.infer<typeof reservationSchema>;
 
 const Reservation = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [date, setDate] = useState<Date | undefined>(undefined);
+  const [time, setTime] = useState<string | undefined>(undefined);
+  const [guests, setGuests] = useState(2);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [notes, setNotes] = useState('');
 
   // Initialize the form
   const form = useForm<ReservationFormValues>({
@@ -74,10 +82,18 @@ const Reservation = () => {
   });
 
   // Handle form submission
-  const onSubmit = async (values: ReservationFormValues) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!date || !time || !name || !email || !phone) {
+      toast.error('Por favor complete todos los campos obligatorios');
+      return;
+    }
+    
     setIsSubmitting(true);
+    
     try {
-      const formattedDate = format(values.date, 'dd/MM/yyyy');
+      const formattedDate = format(date, 'dd/MM/yyyy');
       
       const response = await fetch('/.netlify/functions/send-reservation', {
         method: 'POST',
@@ -85,35 +101,38 @@ const Reservation = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          name: values.name,
-          email: values.email,
-          phone: values.phone,
+          name,
+          email,
           date: formattedDate,
-          time: values.time,
-          guests: parseInt(values.guests),
-          notes: values.notes,
+          time,
+          guests,
+          phone,
+          notes
         }),
       });
 
-      const result = await response.json();
+      const data = await response.json();
 
-      if (response.ok) {
-        toast({
-          title: "Reserva enviada",
-          description: "Hemos recibido tu solicitud de reserva. Te enviaremos un email de confirmación.",
-        });
-        form.reset();
-      } else {
-        throw new Error(result.message || 'Error al enviar la reserva');
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al procesar la reserva');
       }
+
+      setIsSubmitting(false);
+      setShowSuccess(true);
+      
+      // Limpiamos el formulario
+      setDate(undefined);
+      setTime(undefined);
+      setGuests(2);
+      setName('');
+      setEmail('');
+      setPhone('');
+      setNotes('');
+
+      toast.success('Solicitud de reserva enviada correctamente');
     } catch (error) {
-      console.error('Error al enviar la reserva:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "No se pudo enviar la reserva. Por favor, inténtalo de nuevo más tarde.",
-      });
-    } finally {
+      console.error('Error:', error);
+      toast.error(error instanceof Error ? error.message : 'Error al enviar la reserva');
       setIsSubmitting(false);
     }
   };
@@ -124,7 +143,7 @@ const Reservation = () => {
         <h2 className="text-3xl font-bold text-center mb-8">Reserva tu mesa</h2>
         <div className="max-w-xl mx-auto">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
               <FormField
                 control={form.control}
                 name="name"

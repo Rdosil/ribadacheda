@@ -3,7 +3,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import sgMail from '@sendgrid/mail';
 
 // Configure SendGrid with API key
-sgMail.setApiKey(process.env.SENDGRID_API_KEY || '');
+sgMail.setApiKey('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');
 
 type ReservationData = {
   name: string;
@@ -26,7 +26,7 @@ const handler = async (req: VercelRequest, res: VercelResponse) => {
     // Email to the restaurant
     const emailToRestaurant = {
       to: 'ribadacheda@gmail.com',
-      from: process.env.SENDGRID_FROM_EMAIL || 'noreply@ribadacheda.com',
+      from: process.env.SENDGRID_FROM_EMAIL || 'ribadacheda@gmail.com',
       subject: `Nueva reserva: ${name} - ${guests} personas - ${date} ${time}`,
       html: `
         <h2>Nueva Solicitud de Reserva</h2>

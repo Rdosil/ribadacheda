@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -80,22 +79,20 @@ const Reservation = () => {
     try {
       const formattedDate = format(values.date, 'dd/MM/yyyy');
       
-      const reservationData = {
-        name: values.name,
-        email: values.email,
-        phone: values.phone,
-        date: formattedDate,
-        time: values.time,
-        guests: parseInt(values.guests),
-        notes: values.notes,
-      };
-
-      const response = await fetch('/api/send-reservation', {
+      const response = await fetch('/.netlify/functions/send-reservation', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(reservationData),
+        body: JSON.stringify({
+          name: values.name,
+          email: values.email,
+          phone: values.phone,
+          date: formattedDate,
+          time: values.time,
+          guests: parseInt(values.guests),
+          notes: values.notes,
+        }),
       });
 
       const result = await response.json();
